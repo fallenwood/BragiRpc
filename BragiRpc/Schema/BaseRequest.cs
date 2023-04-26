@@ -6,5 +6,5 @@ using System.Text.Json.Serialization;
 [JsonDerivedType(typeof(EchoRequest), typeDiscriminator: 1)]
 public abstract class BaseRequest
 {
-    public virtual string ToJson() => System.Text.Json.JsonSerializer.Serialize(this);
+    public virtual string Serialize() => System.Text.Json.JsonSerializer.Serialize(this);
 }

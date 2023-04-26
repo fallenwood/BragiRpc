@@ -9,7 +9,7 @@ public class BragiClient
         where TRequest: BaseRequest
         where TResponse : BaseResponse
     {
-        var requestMessage = request.ToJson();
+        var requestMessage = request.Serialize();
         var requestData = Encoding.UTF8.GetBytes(requestMessage);
 
         Console.WriteLine(requestMessage);
