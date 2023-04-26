@@ -13,7 +13,7 @@ internal class Program
         var socket = new TcpClient();
         await socket.ConnectAsync(IPAddress.Parse("127.0.0.1"), 9876);
 
-        var client = new BragiClient();
+        var client = new BragiClient(new SerializeHelper());
 
         var request = new AddRequest
         {
@@ -26,7 +26,7 @@ internal class Program
         var reader = new BinaryReader(socket.GetStream());
         var writer = new BinaryWriter(socket.GetStream());
 
-        var response = await client.InvokeAsync<AddRequest, AddResponse>(request, reader, writer);
+        var response = await client.InvokeAsync<AddRequest, AddResponse>(request, reader, writer, SerializationType.MessagePack);
 
         Console.WriteLine(response.Sum);
 

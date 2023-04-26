@@ -9,7 +9,7 @@ internal class Program
     {
         var listener = new TcpListener(IPAddress.Loopback, 9876);
         var service = new BragiDispatcher();
-        var server = new BragiServer(service);
+        var server = new BragiServer(service, new SerializeHelper());
 
         listener.Start();
 
@@ -35,10 +35,11 @@ internal class Program
         {
             while (true)
             {
-                await service.HandleAsync(reader, writer);
+                await service.HandleAsync(reader, writer, SerializationType.MessagePack);
             }
         } catch (Exception ex)
         {
+            Console.Error.WriteLine(ex.ToString());
         }
     }
 }

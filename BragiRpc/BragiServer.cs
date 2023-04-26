@@ -2,15 +2,17 @@
 
 using System;
 using System.Text;
-using System.Text.Json;
 using System.Threading.Tasks;
 
 public class BragiServer
 {
+    private readonly SerializeHelper helper;
     private readonly BragiDispatcher service;
-    public BragiServer(BragiDispatcher service)
+
+    public BragiServer(BragiDispatcher service, SerializeHelper helper)
     {
         this.service = service;
+        this.helper = helper;
     }
 
     public async Task<TResponse> HandleAsync<TRequest, TResponse>(TRequest request)
@@ -24,18 +26,24 @@ public class BragiServer
         return response as TResponse;
     }
 
-    public async Task HandleAsync(BinaryReader reader, BinaryWriter writer)
+    public async Task HandleAsync(BinaryReader reader, BinaryWriter writer, SerializationType serializationType = SerializationType.Json)
     {
         var dataLength = reader.ReadInt32();
         var data = reader.ReadBytes(dataLength);
-        var requestMessage = Encoding.UTF8.GetString(data);
 
-        var request = JsonSerializer.Deserialize<BaseRequest>(requestMessage);
+        var request = serializationType switch
+        {
+            SerializationType.Json => helper.DeserializeJson<BaseRequest>(data),
+            SerializationType.MessagePack => helper.DeserializeMessagePack<BaseRequest>(data),
+        };
 
         var response = await this.HandleAsync<BaseRequest, BaseResponse>(request);
 
-        var responseMsesage = response.Serialize();
-        var bytes = Encoding.UTF8.GetBytes(responseMsesage);
+        var bytes = serializationType switch
+        {
+            SerializationType.Json => Encoding.UTF8.GetBytes(response.Serialize()),
+            SerializationType.MessagePack => response.SerializeMessagePack(),
+        };
 
         writer.Write(bytes.Length);
         writer.Write(bytes);
