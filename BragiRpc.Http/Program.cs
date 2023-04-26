@@ -19,6 +19,7 @@ public class Program
 
         builder.Services.AddSingleton<BragiServer>();
         builder.Services.AddSingleton<BragiDispatcher>();
+        builder.Services.AddSingleton<SerializeHelper>();
 
         builder.Services.Configure<KestrelServerOptions>(options =>
         {
