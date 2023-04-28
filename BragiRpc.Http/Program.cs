@@ -45,7 +45,11 @@ public class Program
             }
             else if (context.Request.ContentType == "application/octet-stream")
             {
-                await HandleBinaryContentAsync(context);
+                await HandleBinaryContentAsync(context, SerializationType.Json);
+            }
+            else if (context.Request.ContentType == "application/messagepack")
+            {
+                await HandleBinaryContentAsync(context, SerializationType.MessagePack);
             }
             else
             {
@@ -70,14 +74,18 @@ public class Program
         await JsonSerializer.SerializeAsync(context.Response.Body, response, typeof(BaseResponse));
     }
 
-    public static async Task HandleBinaryContentAsync(HttpContext context)
+    public static async Task HandleBinaryContentAsync(HttpContext context, SerializationType serializationType)
     {
-        context.Response.ContentType = "application/octet-stream";
+        context.Response.ContentType = serializationType switch
+        {
+            SerializationType.Json => "application/octet-stream",
+            SerializationType.MessagePack => "application/messagepack",
+        };
 
         var service = context.RequestServices.GetService<BragiServer>();
         var reader = new BinaryReader(context.Request.Body);
         var writer = new BinaryWriter(context.Response.Body);
 
-        await service.HandleAsync(reader, writer);
+        await service.HandleAsync(reader, writer, serializationType);
     }
 }

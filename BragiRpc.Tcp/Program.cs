@@ -1,4 +1,4 @@
-﻿namespace BragiRpc.Tcp;
+﻿namespace BragiRpc;
 
 using System.Net;
 using System.Net.Sockets;

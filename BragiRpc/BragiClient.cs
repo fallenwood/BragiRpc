@@ -11,9 +11,8 @@ public class BragiClient
         this.helper = helper;
     }
 
-    public async Task<TResponse> InvokeAsync<TRequest, TResponse>(TRequest request, BinaryReader reader, BinaryWriter writer, SerializationType serializationType = SerializationType.Json)
-        where TRequest: BaseRequest
-        where TResponse : BaseResponse
+    public Task SendRequestAsync<TRequest>(TRequest request, BinaryWriter writer, SerializationType serializationType)
+        where TRequest : BaseRequest
     {
         var requestData = serializationType switch
         {
@@ -21,11 +20,15 @@ public class BragiClient
             SerializationType.MessagePack => request.SerializeMessagePack(),
         };
 
-        // Console.WriteLine(requestMessage);
-
         writer.Write(requestData.Length);
         writer.Write(requestData);
 
+        return Task.CompletedTask;
+    }
+
+    public Task<TResponse> RetrieveResponseAsync<TResponse>(BinaryReader reader, SerializationType serializationType)
+        where TResponse : BaseResponse
+    {
         var responseDataLength = reader.ReadInt32();
         var responseData = reader.ReadBytes(responseDataLength);
 
@@ -35,6 +38,14 @@ public class BragiClient
             SerializationType.MessagePack => helper.DeserializeMessagePack<BaseResponse>(responseData),
         };
 
-        return response as TResponse;
+        return Task.FromResult<TResponse>(response as TResponse);
+    }
+
+    public async Task<TResponse> InvokeAsync<TRequest, TResponse>(TRequest request, BinaryReader reader, BinaryWriter writer, SerializationType serializationType = SerializationType.Json)
+        where TRequest: BaseRequest
+        where TResponse : BaseResponse
+    {
+        await this.SendRequestAsync(request, writer, serializationType);
+        return await this.RetrieveResponseAsync<TResponse>(reader, serializationType);
     }
 }
