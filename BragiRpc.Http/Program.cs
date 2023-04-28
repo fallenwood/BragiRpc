@@ -47,7 +47,7 @@ public class Program
             {
                 await HandleBinaryContentAsync(context, SerializationType.Json);
             }
-            else if (context.Response.ContentType == "application/messagepack")
+            else if (context.Request.ContentType == "application/messagepack")
             {
                 await HandleBinaryContentAsync(context, SerializationType.MessagePack);
             }
@@ -76,7 +76,11 @@ public class Program
 
     public static async Task HandleBinaryContentAsync(HttpContext context, SerializationType serializationType)
     {
-        context.Response.ContentType = "application/octet-stream";
+        context.Response.ContentType = serializationType switch
+        {
+            SerializationType.Json => "application/octet-stream",
+            SerializationType.MessagePack => "application/messagepack",
+        };
 
         var service = context.RequestServices.GetService<BragiServer>();
         var reader = new BinaryReader(context.Request.Body);
