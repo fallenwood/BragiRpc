@@ -17,4 +17,26 @@ public class BragiDispatcher {
             Message = echoRequest.Message,
         };
     }
+
+    public virtual async IAsyncEnumerable<BaseResponse> FibAsync(BaseRequest request)
+    {
+        var fibRequest = request as FibRequest;
+
+        var fib0 = 1;
+        var fib1 = 1;
+
+        for (var i = 0;i < 10; i++)
+        {
+            await Task.Delay(TimeSpan.FromMilliseconds(1500));
+            yield return new FibResponse
+            {
+                Id = i,
+                Value = fib0,
+            };
+
+            var t = fib0 + fib1;
+            fib1 = fib0;
+            fib0 = t;
+        }
+    }
 }

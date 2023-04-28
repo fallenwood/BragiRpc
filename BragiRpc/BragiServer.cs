@@ -15,7 +15,7 @@ public class BragiServer
         this.helper = helper;
     }
 
-    public async Task<TResponse> HandleAsync<TRequest, TResponse>(TRequest request)
+    public async Task<TResponse> HandleUnaryAsync<TRequest, TResponse>(TRequest request)
         where TRequest: BaseRequest
         where TResponse: BaseResponse
     {
@@ -24,6 +24,20 @@ public class BragiServer
         var responseTask = method.Invoke(service, new object[] { request }) as Task<BaseResponse>;
         var response = await responseTask;
         return response as TResponse;
+    }
+
+    public async IAsyncEnumerable<TResponse> HandleServerStreamingAsync<TRequest, TResponse>(TRequest request)
+        where TRequest : BaseRequest
+        where TResponse : BaseResponse
+    {
+        var method = service.GetType().GetMethods().FirstOrDefault(e => string.Equals(e.Name[..^5], request.GetType().Name[..^7], StringComparison.OrdinalIgnoreCase));
+
+        var responses = method.Invoke(service, new object[] { request }) as IAsyncEnumerable<BaseResponse>;
+
+        await foreach (var response in responses)
+        {
+            yield return response as TResponse;
+        }
     }
 
     public async Task HandleAsync(BinaryReader reader, BinaryWriter writer, SerializationType serializationType = SerializationType.Json)
@@ -37,15 +51,34 @@ public class BragiServer
             SerializationType.MessagePack => helper.DeserializeMessagePack<BaseRequest>(data),
         };
 
-        var response = await this.HandleAsync<BaseRequest, BaseResponse>(request);
-
-        var bytes = serializationType switch
+        if (request.RequestType == RequestType.Unary)
         {
-            SerializationType.Json => Encoding.UTF8.GetBytes(response.Serialize()),
-            SerializationType.MessagePack => response.SerializeMessagePack(),
-        };
+            var response = await this.HandleUnaryAsync<BaseRequest, BaseResponse>(request);
 
-        writer.Write(bytes.Length);
-        writer.Write(bytes);
+            var bytes = serializationType switch
+            {
+                SerializationType.Json => Encoding.UTF8.GetBytes(response.Serialize()),
+                SerializationType.MessagePack => response.SerializeMessagePack(),
+            };
+
+            writer.Write(bytes.Length);
+            writer.Write(bytes);
+        }
+        else if (request.RequestType == RequestType.ServerStreaming)
+        {
+            var responses = this.HandleServerStreamingAsync<BaseRequest, BaseResponse>(request);
+
+            await foreach (var response in responses)
+            {
+                var bytes = serializationType switch
+                {
+                    SerializationType.Json => Encoding.UTF8.GetBytes(response.Serialize()),
+                    SerializationType.MessagePack => response.SerializeMessagePack(),
+                };
+
+                writer.Write(bytes.Length);
+                writer.Write(bytes);
+            }
+        }
     }
 }
