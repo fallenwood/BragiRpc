@@ -69,7 +69,7 @@ public class Program
         var service = context.RequestServices.GetService<BragiServer>();
 
         var request = await JsonSerializer.DeserializeAsync<BaseRequest>(context.Request.Body);
-        var response = await service.HandleAsync<BaseRequest, BaseResponse>(request);
+        var response = await service.HandleUnaryAsync<BaseRequest, BaseResponse>(request);
 
         await JsonSerializer.SerializeAsync(context.Response.Body, response, typeof(BaseResponse));
     }

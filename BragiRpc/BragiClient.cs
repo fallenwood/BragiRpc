@@ -41,11 +41,33 @@ public class BragiClient
         return Task.FromResult<TResponse>(response as TResponse);
     }
 
-    public async Task<TResponse> InvokeAsync<TRequest, TResponse>(TRequest request, BinaryReader reader, BinaryWriter writer, SerializationType serializationType = SerializationType.Json)
+    public async Task<TResponse> InvokeUnaryAsync<TRequest, TResponse>(TRequest request, BinaryReader reader, BinaryWriter writer, SerializationType serializationType = SerializationType.Json)
         where TRequest: BaseRequest
         where TResponse : BaseResponse
     {
         await this.SendRequestAsync(request, writer, serializationType);
         return await this.RetrieveResponseAsync<TResponse>(reader, serializationType);
+    }
+
+    public async IAsyncEnumerable<TResponse> InvokeServerStreamingAsync<TRequest, TResponse>(TRequest request, BinaryReader reader, BinaryWriter writer, SerializationType serializationType = SerializationType.Json)
+        where TRequest : BaseRequest
+        where TResponse : BaseResponse
+    {
+        await this.SendRequestAsync(request, writer, serializationType);
+
+        while (true)
+        {
+            TResponse response;
+            try
+            {
+                response = await this.RetrieveResponseAsync<TResponse>(reader, serializationType);
+            }
+            catch (Exception ex)
+            {
+                break;
+            }
+
+            yield return response;
+        }
     }
 }

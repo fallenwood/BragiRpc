@@ -6,5 +6,8 @@ using MessagePack;
 public class EchoRequest : BaseRequest
 {
     [Key(0)]
+    public override RequestType RequestType { get; set; } = RequestType.Unary;
+
+    [Key(1)]
     public string Message { get; set; }
 }
