@@ -45,7 +45,11 @@ public class Program
             }
             else if (context.Request.ContentType == "application/octet-stream")
             {
-                await HandleBinaryContentAsync(context);
+                await HandleBinaryContentAsync(context, SerializationType.Json);
+            }
+            else if (context.Response.ContentType == "application/messagepack")
+            {
+                await HandleBinaryContentAsync(context, SerializationType.MessagePack);
             }
             else
             {
@@ -70,7 +74,7 @@ public class Program
         await JsonSerializer.SerializeAsync(context.Response.Body, response, typeof(BaseResponse));
     }
 
-    public static async Task HandleBinaryContentAsync(HttpContext context)
+    public static async Task HandleBinaryContentAsync(HttpContext context, SerializationType serializationType)
     {
         context.Response.ContentType = "application/octet-stream";
 
@@ -78,6 +82,6 @@ public class Program
         var reader = new BinaryReader(context.Request.Body);
         var writer = new BinaryWriter(context.Response.Body);
 
-        await service.HandleAsync(reader, writer);
+        await service.HandleAsync(reader, writer, serializationType);
     }
 }
